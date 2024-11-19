@@ -1,0 +1,53 @@
+from bs4 import BeautifulSoup
+import requests
+import smtplib
+import string
+import pprint
+
+def remove(string):
+    return string.translate(' \n\t\r')
+
+
+my_email = #add your email here
+password = #add your password
+smtp_add = #add your SMTP address
+item_link = input("Enter amazon product url: ")
+
+
+header = {
+    "Accept-Language" : "en-US",
+}
+
+response = requests.get(f"{item_link}", headers = header)
+content = response.text
+
+soup = BeautifulSoup(content, "html.parser")
+# print(soup.prettify())
+raw_price_1 = soup.find(class_="a-price-whole")
+raw_price_2 = soup.find(class_="a-price-fraction")
+
+price = float(raw_price_1.getText() + raw_price_2.getText())
+
+# print(price)
+# price = float((raw_price.getText()).split("$")[1])
+item_name = (soup.find(class_="a-size-large product-title-word-break").getText()).encode('ascii', 'ignore').decode(
+    'ascii')
+
+final = remove(item_name)
+short_item_name = (item_name[:30]).encode('ascii', 'ignore').decode('ascii')
+# print(final)
+target_price = float(input("What is your target price for this item?: (numbers only e.g. 10.99): "))
+# print(f"Subject:Amazon Price Drop for{short_item_name}...\n\n{short_item_name} is now {price}.\nLink to purchase: {item_link}")
+
+if price < target_price:
+    with smtplib.SMTP(smtp_add, port=587) as connection:
+        connection.starttls()
+        connection.login(user=my_email, password=password)
+        connection.sendmail(
+            from_addr=my_email,
+            to_addrs="jocelynchay@yahoo.com",
+            msg=f"Subject:Amazon Price Drop for {short_item_name}\n\n {final}\nis now {price}.\n\n Link to purchase: \n {item_link}"
+        )
+    print("Email sent")
+
+else: print("Email not sent")
